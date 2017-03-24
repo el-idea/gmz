@@ -95,6 +95,16 @@ void interrupt(void)
      if (DISP_BL) bat_count++; // wenn Backlight an
      sek_flag = 1;
      sek_flag_ADC_refresh = 1;
+    
+     // Bilde 16 bit Wert = Counts per Minute
+     tks_per_sek = TMR3H_buff;
+     tks_per_sek = (tks_per_sek << 8) | TMR3L_buff;
+     
+     if ( tks_per_sek > 1 )
+     {
+      tks_per_min[1] = 0;
+      tks_min_0eff[1] = 0;
+     }
     }
     
     // Update Minuten

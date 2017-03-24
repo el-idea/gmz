@@ -19,8 +19,8 @@
 
 // max. 8 (64bytes) custom characters  (Controller ST7066U)
 const char lcd_character[] = { 0, 0, 1, 2,20, 8, 0,31,        // LCD char: "check mark"     0
-                              16,24,28,30,30,28,24,16,   // LCD char: "arrow to right" 1
-                               1, 3, 7,15,15, 7, 3, 1,         // LCD char: "arrow to left"  2
+                               8,12,14,15,15,14,12, 8,         // LCD char: "arrow to right" 1
+                               2, 6,14,30,30,14, 6, 2,         // LCD char: "arrow to left"  2
                                0,31,17,17,17,17,31, 0,      // LCD char: "box"  3
                                0,13,26,21,11,22, 0, 0,     // LCD char: "Durchschnitt"    4
                                0,27,27, 4,14,14, 0, 0};     // LCD char: "radioactivity"    5

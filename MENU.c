@@ -41,6 +41,7 @@ void _hauptmenu(void)
     if (count >= max_pos) count = enc_count_2 = max_pos - 2;
     else if (count.B7) count = enc_count_2 = 0;
 
+    // Drehencoder aktiviert
     if (count != count_last)
     {
      _lcd(CURSOR_BL_OFF,'I');
@@ -49,27 +50,27 @@ void _hauptmenu(void)
      _lcd(ROW2,'I');
      _romtolcd(main_menu_text[count+1]);
 
-     // Spannungsanzeige (nur TEXT)
+     // Spannungs (Auswahlpfeile)
      if (count == 2)
       {
+       taster_count = 0;  // taster zähler rücksetzen
+       _show_arrow(TOP_RIGHT);
+       _show_arrow(TOP_LEFT);
        _lcd(ROW2,'I');
        if (bat_flag == 1) _romtolcd(ADC_text[3]); // Batterie oder Netz
        else _romtolcd(ADC_text[4]);
       }
 
-     // Auswahlpfeil einblenden
-     if ((count == 2) || (count == 4))
+     // Einstellungen (Auswahlpfeile)
+     if (count == 4)
      {
       taster_count = 0;  // taster zähler rücksetzen
-      if (count == 2) _lcd(ROW1+19,'I');
-      else _lcd(ROW2+19,'I');
-      _lcd(ARROW_RIGHT,'D');
-      if (count == 2) _lcd(ROW1+19,'I');
-      else _lcd(ROW2+19,'I');
-      _lcd(CURSOR_BL_ON,'I');
+      _show_arrow(BOT_LEFT);
      }
      count_last = count;
-    }
+    }  // End
+
+
 
    // Spannungsanzeige (nur WERT)
    if ((count == 2) && (sek_flag_ADC_refresh))
@@ -118,6 +119,7 @@ void _start_GMZ(void)
   const signed short max_pos = 6; //Anzahl der menüpunkte * 2 Zeilen
   signed short count, count_last; // indikator
   unsigned short zf = 0; // Zeilenflag für Anzeige
+  unsigned short chg_counter = 0; // Flag für Wechsel (ISR <-> Counter)
 
    
   char tick_text[11], byte_text[4], sievert_text[10];
@@ -133,6 +135,7 @@ void _start_GMZ(void)
   day = hour = min = sek = sek_sum = xtel_sek = TMR3L = TMR3H = 0;
   tks_min_0eff[0] = tks_min_0eff[1] = d_tks_min_0eff = tks_sum_0eff = min_sum_0eff = 0;  // ticks pro minute für Nulleffekt
   tks_per_sek = 0;
+  tks_per_min[0] = tks_per_min[1] = 0;
   TMR3L_buff = TMR3H_buff = 0;
   sv = 0;
 
@@ -163,19 +166,21 @@ void _start_GMZ(void)
      zf = 0;
     }
 
-    // Bilde 16 bit Wert = Counts per Minute
-    tks_per_sek = TMR3H_buff;
-    tks_per_sek = (tks_per_sek << 8) | TMR3L_buff;
-    
-    // Bei > 100 Ticks/sec -> Beeper Dauersignal -> Int. aus
-    if ( tks_per_sek > 100 )
-    {
+     // Bei > 100 Ticks/sec -> Beeper Dauersignal -> Int. aus
+     if ( tks_per_sek > 100 )
+     {
        TICKS_HV_OFF;
        if (sound_flag) BEEP = 1;  // Beeper nur einschalten, wenn aktiviert
        if (LED_flag) LED = 1;  // LED nur einschalten, wenn aktiviert
-    }
-    
-    else  TICKS_HV_ON;
+       chg_counter = 0;
+     }
+     else if ( !chg_counter )
+     {
+       TICKS_HV_ON;
+       BEEP = 0;
+       LED = 0;
+       chg_counter = 1;
+     }
 
       // Zeige Sievers
       // *************
@@ -372,7 +377,7 @@ void _show_message(unsigned short show_line, signed short count, unsigned short 
 
 void _settings(void)
 {
- const signed short max_pos = 10; //Anzahl der menüpunkte * 2 Zeilen
+ const signed short max_pos = 8; //Anzahl der menüpunkte * 2 Zeilen
  signed short count, count_last, flag_last; // indikator
 
   taster_count = 0;
@@ -385,9 +390,10 @@ void _settings(void)
 
     count = enc_count_2;          // übergebe counter Wert
 
-    if (count >= max_pos) count = enc_count_2 = max_pos - 2;
+    if (count >= max_pos) count = enc_count_2 = max_pos;
     else if (count.B7) count = enc_count_2 = 0;
 
+    // Drehencoder aktiviert
     if ((count != count_last) || (flag_last))
     {
      flag_last = 0;  // Auswahl aktualisieren
@@ -398,96 +404,203 @@ void _settings(void)
      _lcd(ROW2,'I');
      _romtolcd(set_menu_text[count+1]);
 
-     // Checkbox oder Auswahlhaken einblenden
-     if (count == 0)
+
+     switch( count )
      {
-      taster_count = 0;  // taster zähler rücksetzen
-      _lcd(ROW1+19,'I');
-      if (sound_flag) _lcd(CHECKMARK,'D');
-      else _lcd(CHECKBOX,'D');
-      _lcd(ROW1+19,'I');
-      _lcd(CURSOR_BL_ON,'I');
-     }
-     
-     if (count == 2)
-     {
-      taster_count = 0;  // taster zähler rücksetzen
-      _lcd(ROW1+19,'I');
-      if (LED_flag) _lcd(CHECKMARK,'D');
-      else _lcd(CHECKBOX,'D');
-      _lcd(ROW1+19,'I');
-      _lcd(CURSOR_BL_ON,'I');
-     }
-     
-     // Auswahlpfeil in erster oder zweiter Reihe einblenden
-     if (count >= 4)
-     {
-      taster_count = 0;  // taster zähler rücksetzen
-      if (count == 8)
-      {
-       _lcd(ROW1,'I');
-       _lcd(ARROW_LEFT,'D');
-       _lcd(ROW1,'I');
-       _lcd(CURSOR_BL_ON,'I');
-      }
-      else
-      {
-       _lcd(ROW2+19,'I');
-       _lcd(ARROW_RIGHT,'D');
-       _lcd(ROW2+19,'I');
-       _lcd(CURSOR_BL_ON,'I');
-      }
+       case 0: // Pfeil rechts + Checkbox
+         taster_count = 0;  // taster zähler rücksetzen
+         _show_arrow(BOT_RIGHT);
+         _show_checkbox(TOP_RIGHT, sound_flag);
+         break;
+
+
+       case 2: // Pfeil rechts & links + Checkbox
+         taster_count = 0;  // taster zähler rücksetzen
+         _show_arrow(BOT_RIGHT);
+         _show_arrow(BOT_LEFT);
+         _show_checkbox(TOP_RIGHT, led_flag);
+         break;
+
+
+       case 4: // Pfeil rechts & links
+         taster_count = 0;  // taster zähler rücksetzen
+         _show_arrow(BOT_RIGHT);
+         _show_arrow(BOT_LEFT);
+         break;
+         
+         
+       case 6: // Pfeil rechts & links
+         taster_count = 0;  // taster zähler rücksetzen
+         _show_arrow(BOT_RIGHT);
+         _show_arrow(BOT_LEFT);
+         break;
+         
+       /*
+       case 8: // Pfeil rechts & links
+         taster_count = 0;  // taster zähler rücksetzen
+         _show_arrow(BOT_RIGHT);
+         _show_arrow(BOT_LEFT);
+         break;
+       */
+         
+       case 8: // Pfeil links
+         taster_count = 0;  // taster zähler rücksetzen
+         _show_arrow(BOT_LEFT);
+         break;
+       
+       default: break;
      }
      count_last = count;
-    }
+   }
   
+
    // Wenn Taster gedrückt
    if (taster_count)
    {
-     // Beeper aktivieren oder deaktivieren
-     if (count == 0)
+     switch( count )
      {
+     case 0:  // Beeper aktivieren oder deaktivieren
        if (sound_flag) sound_flag = 0;
        else sound_flag = 1;
        EEPROM_write(BEEP_EEPROM, sound_flag);
        flag_last = 1; //ausgabe aktivieren
-     }
+       break;
      
-     // Beeper aktivieren oder deaktivieren
-     if (count == 2)
-     {
+
+     case 2:  // LED aktivieren oder deaktivieren
        if (LED_flag) LED_flag = 0;
        else LED_flag = 1;
        EEPROM_write(LED_EEPROM, LED_flag);
        flag_last = 1; // ausgabe aktivieren
-     }
+       break;
 
-     // Hochspannung einstellen auswahl
-     if (count == 4)
-     {
-      _set_HV();
+
+     case 4:  // Hochspannung einstellen auswahl
+      _info_HV();
+      _lcd_clear();
+      count = 4;
+      enc_count_2 = 4;                   //setze Encoder_Position
+      count_last = 2;                    // vergleichsindikator für Encoder Pos.
+      break;
+     
+     /*
+     case 6:  // Zeit-Basis einstellen auswahl
+      _info_time_base();
       _lcd_clear();
       count = 0;
-      enc_count_2 = 0;                   //setze Encoder_Position auf 0
+      enc_count_2 = 0;                   //setze Encoder_Position
       count_last = 2;                    // vergleichsindikator für Encoder Pos.
-     }
+      break;
+     */
 
-     // Informationen anzeigen
-     if (count == 6)
-     {
+     case 6:  // Informationen anzeigen
       _info_box();
       _lcd_clear();
-      count = 0;
-      enc_count_2 = 0;                   //setze Encoder_Position auf 0
+      count = 6;
+      enc_count_2 = 6;                   //setze Encoder_Position
       count_last = 2;                    // vergleichsindikator für Encoder Pos.
-     }
+      break;
 
-     if (count == 8) return;
-     
+     case 8: return;
+    
+     default: break;
+    }
      taster_count = 0;  // taster zähler rücksetzen
    }
-   
   };
+}
+ 
+ 
+// *****************************************************************************
+// - VORABINFO - Hochspannung einstellen
+// *****************************************************************************
+void _info_HV(void)
+{
+   const signed short max_pos = 6; //Anzahl der menüpunkte - 2 Zeilen
+   signed short count, count_last; // indikator
+
+  taster_count = 0;
+  _lcd_clear();
+  enc_count_2 = 0;                   //setze Encoder_Position auf 0
+  count_last = 2;                    // vergleichsindikator für Encoder Pos.
+
+  while (1){
+
+    count = enc_count_2;          // übergebe counter Wert
+
+    if (count > max_pos) count = enc_count_2 = max_pos;
+    else if (count.B7) count = enc_count_2 = 0;
+
+    if (count != count_last)
+    {
+     _lcd(CURSOR_BL_OFF,'I');
+     _lcd(ROW1,'I');
+     _romtolcd(HV_menu_info[count]);
+     _lcd(ROW2,'I');
+     _romtolcd(HV_menu_info[count+1]);
+
+     // Auswahlpfeil einblenden
+
+    if (!count) _show_arrow(BOT_RIGHT);
+    else if (count > 1  &&  count < max_pos)
+    {
+     _show_arrow(BOT_RIGHT);
+     _show_arrow(BOT_LEFT);
+    }
+    else
+     {
+      taster_count = 0;  // taster zähler rücksetzen
+      _show_arrow(BOT_LEFT);
+     }
+     count_last = count;
+    }
+
+   if (count == max_pos)
+   {
+     
+     taster_count = 0;
+     enc_count =  0;                      //setze Encoder_Position auf startwert
+
+     while (!taster_count)
+     {
+       count = enc_count;          // übergebe counter Wert
+      
+      // Auswahl "Abbrechen"
+       if (count <= 0)
+       {
+          _show_checkbox(TOP_LEFT, OFF);
+          _show_checkbox(BOT_LEFT, ON);
+
+          while ( count <= 0 )
+          {
+            if (taster_count) return;
+            count = enc_count;          // übergebe counter Wert
+            if (count < 0 ) count = enc_count = 0;
+          };
+       }
+       
+       // Auswahl "Starten"
+       else if (count >= 1)
+       {
+         _show_checkbox(BOT_LEFT, OFF);
+         _show_checkbox(TOP_LEFT, ON);
+
+         while ( count >= 1 )
+          {
+            if (taster_count) 
+            {
+             _set_HV();
+             return;
+            }
+            count = enc_count;          // übergebe counter Wert
+            if (count > 1 ) count = enc_count = 1;
+          };
+       }
+     
+     };
+    }
+ }
+   _set_HV();
 }
   
   
@@ -600,7 +713,7 @@ void _set_HV(void)
 
 void _info_box(void)
 {
- const signed short max_pos = 12; //Anzahl der menüpunkte * 2 Zeilen
+ const signed short max_pos = 8; //Anzahl der menüpunkte - 2 Zeilen
  signed short count, count_last; // indikator
 
   taster_count = 0;
@@ -612,7 +725,7 @@ void _info_box(void)
 
     count = enc_count_2;          // übergebe counter Wert
 
-    if (count >= max_pos) count = enc_count_2 = max_pos - 2;
+    if (count > max_pos) count = enc_count_2 = max_pos;
     else if (count.B7) count = enc_count_2 = 0;
 
     if (count != count_last)
@@ -624,18 +737,102 @@ void _info_box(void)
      _romtolcd(info_menu_text[count+1]);
 
      // Auswahlpfeil einblenden
-    if (count == 10)
+     
+    if (!count) _show_arrow(BOT_RIGHT);
+    else if (count > 1  &&  count < max_pos)
+    {
+     _show_arrow(BOT_RIGHT);
+     _show_arrow(BOT_LEFT);
+    }
+    else
      {
       taster_count = 0;  // taster zähler rücksetzen
-      _lcd(ROW1,'I');
-      _lcd(ARROW_LEFT,'D');
-      _lcd(ROW1,'I');
-      _lcd(CURSOR_BL_ON,'I');
+      _show_arrow(BOT_LEFT);
      }
      count_last = count;
     }
 
-   if ((count == 10) && (taster_count)) return;
+   if ((count == max_pos) && (taster_count)) return;
 
   };
 }
+
+
+// *****************************************************************************
+// Navigations-Pfeile anzeigen
+// *****************************************************************************
+void _show_arrow(unsigned short pos)
+{
+  switch (pos)
+  {
+   case TOP_LEFT:
+     _lcd(ROW1,'I');
+     _lcd(ARROW_LEFT,'D');
+     break;
+   
+   case TOP_RIGHT:
+     _lcd(ROW1+19,'I');
+     _lcd(ARROW_RIGHT,'D');
+     break;
+     
+    case BOT_LEFT:
+     _lcd(ROW2,'I');
+     _lcd(ARROW_LEFT,'D');
+     break;
+
+   case BOT_RIGHT:
+     _lcd(ROW2+19,'I');
+     _lcd(ARROW_RIGHT,'D');
+     break;
+   
+   default: break;
+  }
+}
+
+
+
+// *****************************************************************************
+// CheckBoxe anzeigen
+// *****************************************************************************
+void _show_checkbox(unsigned short pos, unsigned short state)
+{
+  switch (pos)
+  {
+   case TOP_LEFT:
+     _lcd(ROW1,'I');
+     if (state) _lcd(CHECKMARK,'D');
+     else _lcd(CHECKBOX,'D');
+     _lcd(ROW1,'I');
+     _lcd(CURSOR_BL_ON,'I');
+     break;
+
+   case TOP_RIGHT:
+     _lcd(ROW1+19,'I');
+     if (state) _lcd(CHECKMARK,'D');
+     else _lcd(CHECKBOX,'D');
+     _lcd(ROW1+19,'I');
+     _lcd(CURSOR_BL_ON,'I');
+     break;
+
+    case BOT_LEFT:
+      _lcd(ROW2,'I');
+      if (state) _lcd(CHECKMARK,'D');
+      else _lcd(CHECKBOX,'D');
+      _lcd(ROW2,'I');
+      _lcd(CURSOR_BL_ON,'I');
+      break;
+
+   case BOT_RIGHT:
+     _lcd(ROW2+19,'I');
+     if (state) _lcd(CHECKMARK,'D');
+     else _lcd(CHECKBOX,'D');
+     _lcd(ROW2+19,'I');
+     _lcd(CURSOR_BL_ON,'I');
+     break;
+
+   default: break;
+  }
+}
+
+
+

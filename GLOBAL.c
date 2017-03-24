@@ -31,7 +31,7 @@ const code char *ADC_text[5] = {    "SPANNUNG: ",
 
 
 
-const code char *main_menu_text[7] = {   "      GMZ 2017      ",
+const code char *main_menu_text[6] = {   "      GMZ 2017      ",
                                          "    GSI DARMSTADT   ",
 
                                          "  MESSUNG STARTEN   ",
@@ -42,7 +42,7 @@ const code char *main_menu_text[7] = {   "      GMZ 2017      ",
                                     };
 
 
-const code char *set_menu_text[11] =    {"SIGNALGEBER AKTIV   ",
+const code char *set_menu_text[12] =    {"SIGNALGEBER AKTIV   ",
                                          "                    ",
                                          
                                          "LED AKTIV           ",
@@ -50,38 +50,51 @@ const code char *set_menu_text[11] =    {"SIGNALGEBER AKTIV   ",
 
                                          "    HOCHSPANNUNG    ",
                                          "     EINSTELLEN     ",
-                                         
+                                         /*
+                                         "     ZEIT-BASIS     ",
+                                         "     ABGLEICHEN     ",
+                                         */
                                          "INFORMATIONEN UEBER ",
                                          "    DIESES GERAET   ",
                                          
-                                         "      ZURUECK       ",
-                                         "                    "
+                                         "                    ",
+                                         "      ZURUECK       "
                                     };
 
 
 
-const code char *info_menu_text[13] =   { "AUSBILDUNGSABTEILUNG",
+const code char *info_menu_text[10] =   {"AUSBILDUNGSABTEILUNG",
                                          "    GSI DARMSTADT   ",
                                          
                                          "PRAKTIKANTEN-BAUSATZ",
-                                         "STATUS:  PROTOTYP   ",
+                                         "     PROTOTYP V3    ",
                                          
                                          "ZAEHLROHR: UNGEEICHT",
-                                         "TIME BASE: +/- 2%   ",
+                                         " ENERGIEKOMPENSIERT ",
+                                         
+                                         "      ZEITBASIS     ",
+                                         "        +/-2%       ",
 
-                                         "HINWEIS: WIRD DIE HV",
-                                         "ZU HOCH EINGESTELLT,",
-                                         "KANN DAS ZAEHLROHR  ",
-                                         "BESCHAEDIGT WERDEN!!",
-
-                                         "      ZURUECK       ",
-                                         "                    "
+                                         "                    ",
+                                         "      ZURUECK       "
                                     };
 
 
+const code char *HV_menu_info[8] = {     "  ACHTUNG! HINWEIS! ",
+                                         "                    ",
+                                         
+                                         "WIRD DIE HV ZU HOCH ",
+                                         "    EINGESTELLT,    ",
+
+                                         " KANN DAS ZAEHLROHR ",
+                                         " BESCHAEDIGT WERDEN ",
+                                         
+                                         "    STARTEN         ",
+                                         "    ABBRECHEN       "
+                                    };
 
 
-const code char *HV_menu_text[7] = {     "MESSEN SIE AN HV-MP1",
+const code char *HV_menu_text[6] = {     "MESSEN SIE AN HV-MP1",
                                          "ALT:   %    NEU:   %",
                                          
                                          "ACHTUNG! HV:   %    ",
@@ -92,7 +105,7 @@ const code char *HV_menu_text[7] = {     "MESSEN SIE AN HV-MP1",
                                     };
 
 
-const code char *run_text[7] =      {    "UMG.AEQUIVALENTDOSIS",
+const code char *run_text[6] =      {    "UMG.AEQUIVALENTDOSIS",
                                          "                    ",
                                          
                                          "TICKS:              ",
@@ -103,13 +116,13 @@ const code char *run_text[7] =      {    "UMG.AEQUIVALENTDOSIS",
                                     };
 
 
-const code char *run_text_ext[3] =  {
+const code char *run_text_ext[2] =  {
                                          "BITTE WARTEN:    SEK",
                                          "STRAHLUNG ZU HOCH!!!"
                                     };
 
 
-const code char *einheit_text[5] = {     " nSv/h",   // nano
+const code char *einheit_text[4] = {     " nSv/h",   // nano
                                          " ‰Sv/h",   // ‰ = µ in display chart
                                          " mSv/h",   // milli
                                          " H*(10)"

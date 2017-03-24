@@ -42,6 +42,15 @@
  #define CURSOR_BL_ON         0x0D   //CURSOR Blinken ein
  #define CURSOR_BL_OFF        0x0C   //CURSOR Blinken aus
 
+
+ // Position aliases
+ #define TOP_LEFT              1      // Position
+ #define TOP_RIGHT             2      // Position
+ #define BOT_LEFT              3      // Position
+ #define BOT_RIGHT             4      // Position
+
+ #define ON                    1
+ #define OFF                   0
  
  //EEPROM
  #define HV_EEPROM            0x00   //Adresse im EEPROM
@@ -59,6 +68,7 @@ extern const code char *ADC_text[];
 extern const code char *main_menu_text[];
 extern const code char *set_menu_text[];
 extern const code char *info_menu_text[];
+extern const code char *HV_menu_info[];
 extern const code char *HV_menu_text[];
 extern const code char *run_text[];
 extern const code char *run_text_ext[];

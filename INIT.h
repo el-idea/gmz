@@ -29,12 +29,12 @@ void _time_init(void);
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
                         PORT B
                        --------
-  * RB0       ZÄHLROHR -> Ticks
+  * RB0       ZÄHLROHR -> Ticks zaehlen mit Interrupt ( NUR IM HV MENUE )
   * RB1       ENCODER ->  Taster (Pull up)
   * RB2       ENCODER ->  B (Pull up)
   * RB3       ENCODER ->  A (Pull up)
   * RB4       LED
-  * RB5
+  * RB5       ZÄHLROHR -> Ticks zählen mit Timer 3 ( MESSEN )
   * RB6       PICkit -> ICSPCLK
   * RB7       PICkit -> ICSPDAT
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -59,4 +59,18 @@ void _time_init(void);
   * RE1       LCD -> R/W
   * RE2
   * RE3       PIC -> Reset
+**********************************************************
+
+
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                        Timer
+                       --------
+  * TMR0 (8/16bit)
+  * TMR1 (16bit)
+  * TMR2 (8bit)     PWM to control High Voltage
+  * TMR3 (16bit)    COUNTER for Ticks
+  * TMR4 (8bit)     ENCODER read every 2 ms
+  * TMR5 (16bit)    TIME BASE (0,2 Sek)
+  * TMR6 (8bit)     BEEPER on (32 ms)
 *********************************************************/

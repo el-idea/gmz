@@ -30,10 +30,10 @@ const char lcd_character[] = { 0, 0, 1, 2,20, 8, 0,31,        // LCD char: "chec
 
 void _pic_init(void) {
 
-
  // OSCCON-Register
  OSCCON = 0;
  OSCCON2 = 0;
+ OSCTUNE = 0b00111110;
  
  IRCF2_bit = 1;
  IRCF1_bit = 1;
@@ -43,13 +43,12 @@ void _pic_init(void) {
  SCS0_bit = 0;                             // Use Internal Clock
 
 
- while (HFIOFS_bit == 0) {};                 // Wait for stable clock
+while (HFIOFS_bit == 0) {};                 // Wait for stable clock
 
 
 // Interrupts ausschalten
   // IOCB    INTERRUPT-ON-CHANGE PORTB REGISTER
   IOCB = 0x00;                            // Int. on change Disable
-
 
   // PIR
   PIR1 = 0x00;                        //Disable all PIR
@@ -78,26 +77,14 @@ void _pic_init(void) {
   NOT_RBPU_bit = 1;                   // disable Pull-Ups PORTB
   INTCON3 = 0x00;                     // Clear
 
-
 // WEAK PULL UP
    WPUB = 0;                      // Disable Pull Ups
 
 // PCON
   // PowerControl Status Bits - not relevant
 
-
 // EEprom
   // EECON1
-
-
-
-// TIMER 1
-  TMR1ON_bit = 0;
-
-// TIMER 2
-   TMR2ON_bit = 0;
-
-
 
 //  SSPCON - I2C, SPI-Mode
   SSPEN_bit = 0;                                // Disable Bus-Modes and use I/O
@@ -148,15 +135,19 @@ void _pic_init(void) {
   ADCON0 = 0b00000001;
 
 
-
 // PORTS A-E
-
- //Clear Latches
+ //Clear Ports and Latches
  PORTA = 0x00;
  PORTB = 0x00;
  PORTC = 0x01;  // Display aus
  PORTD = 0x00;
  PORTE = 0x00;
+ 
+ LATA = 0x00;
+ LATB = 0x00;
+ LATC = 0x01;  // Display aus
+ LATD = 0x00;
+ LATE = 0x00;
 
  // Set In/Out
  TRISA = 0xFF;                   // All In
@@ -164,6 +155,33 @@ void _pic_init(void) {
  TRISC = 0b11111000;
  TRISD = 0x00;                   //Display Dataport
  TRISE = 0b11111100;
+
+
+// PMD0: PERIPHERAL MODULE DISABLE REGISTER 0
+ UART2MD_bit = 1;   // Module is disabled, Clock Source is disconnected...
+ UART1MD_bit = 1;   // Module is disabled, Clock Source is disconnected...
+ TMR6MD_bit = 0;    // Module is enabled, Clock Source is connected...
+ TMR5MD_bit = 0;    // Module is enabled, Clock Source is connected...
+ TMR4MD_bit = 0;    // Module is enabled, Clock Source is connected...
+ TMR3MD_bit = 0;    // Module is enabled, Clock Source is connected...
+ TMR2MD_bit = 0;    // Module is enabled, Clock Source is connected...
+ TMR1MD_bit = 1;    // Module is disabled, Clock Source is disconnected...
+ 
+// PMD1: PERIPHERAL MODULE DISABLE REGISTER 1
+ MSSP2MD_bit = 1;   // Module is disabled, Clock Source is disconnected...
+ MSSP1MD_bit = 1;   // Module is disabled, Clock Source is disconnected...
+ CCP5MD_bit = 0;    // Module is enabled, Clock Source is connected...
+ CCP4MD_bit = 1;    // Module is disabled, Clock Source is disconnected...
+ CCP3MD_bit = 1;    // Module is disabled, Clock Source is disconnected...
+ CCP2MD_bit = 1;    // Module is disabled, Clock Source is disconnected...
+ CCP1MD_bit = 0;    // Module is enabled, Clock Source is connected...
+
+// PMD2: PERIPHERAL MODULE DISABLE REGISTER 2
+ CTMUMD_bit = 1;   // Module is disabled, Clock Source is disconnected...
+ CMP2MD_bit = 1;   // Module is disabled, Clock Source is disconnected...
+ CMP1MD_bit = 1;   // Module is disabled, Clock Source is disconnected...
+ ADCMD_bit = 0;    // Module is enabled, Clock Source is connected...
+
 
 
  sound_flag = EEPROM_READ(BEEP_EEPROM);  // Lese Beeper Flag
@@ -181,7 +199,6 @@ void _pic_init(void) {
   LED_flag = 1;
   EEPROM_WRITE(LED_EEPROM, LED_flag);
  }
-
 }
 
 
@@ -212,7 +229,7 @@ void _lcd_init(void)
 
 
 // *****************************************************************************
-// PWM Init
+// PWM Init  -> TIMER 2
 // *****************************************************************************
 
 void _pwm_init(void)
@@ -265,7 +282,7 @@ void _pwm_init(void)
 
 
 // *****************************************************************************
-// Encoder Init
+// Encoder Init -> TIMER 4
 // *****************************************************************************
 
 void _enc_init( void )
@@ -296,19 +313,23 @@ void _enc_init( void )
    T4CON = 0b00000011;
 }
 
+
 // *****************************************************************************
-// Ticks (Zählrohr) Init
+// Ticks (Zählrohr) Init -> TIMER 3
 // *****************************************************************************
 
 void _tick_init(void)
 {
-   // Zählrohr Ticks
+  // Init Interrupt RB0 for Ticks in HV Menue
+
+  // Zählrohr Ticks
   INTEDG0_bit = 0;                            // negative Flanke
   INT0IF_bit = 0;                         // Clear Flag
   INT0IE_bit = 0;                         // INT1 ausschalten
 
  //-----------------------------------------------------
-  // TIMER 6 - Beeper 10ms @ 8 MHz
+ 
+  // Init TIMER 6 - Beeper 10ms @ 8 MHz
    // IPR5
    TMR6MD_bit = 0; // Power for Timer 6 is enabled
    TMR6IP_bit = 1; // High priority
@@ -321,52 +342,84 @@ void _tick_init(void)
    PR6 = 250;       // Comparator-Wert
    TMR6 = 0x00;     // set default
    T6CON = 0b00100011;  // TMR6 ist aus
+
+ //-----------------------------------------------------
+
+// Init Timer 3 as counter
+  
+  // T3CON
+  //*******
+  // External Clocking on T3CKI Pin (RB5)
+  TMR3CS1_bit = 1;
+  TMR3CS0_bit = 0;
+  T3SOSCEN_bit = 0;
+  
+  // Input Clock Prescale Select bits
+  T3CKPS1_bit = 0;
+  T3CKPS0_bit = 0;
+
+  NOT_T3SYNC_bit = 0; // Sync external clock
+  
+  T3RD16_bit = 1; // enable 16 bit read/write
+  
+  TMR3ON_bit = 0; // stop Counter
+   
+  // T3GCON
+  //*******
+  
+  TMR3GE_bit = 0; // counts regardless of Timer 3 gate function
+  T3GPOL_bit = 0; // counts when gate is low
+  T3GTM_bit = 0; //  Gate Toggle mode is disabled + toggle flip-flop is cleared
+  T3GSPM_bit = 0; // gate Single-Pulse mode is disabled
+  T3GSS1_bit = 0; // gate pin
+  T3GSS1_bit = 0; // gate pin
 }
 
 
+
+
 // *****************************************************************************
-// Time (Sekundentakt) Init
+// Timebase (Sekundentakt) Init -> TIMER 5
 // *****************************************************************************
 
 void _time_init(void)
 {
    // Compare Mode
-  C3TSEL1_bit = 0;      // CCP3 -> select Timer 3
-  C3TSEL0_bit = 1;
+  C5TSEL1_bit = 1;      // CCP5 -> select Timer 5
+  C5TSEL0_bit = 0;
  
-  CCP3CON = 0b00001011; // Compare Mode Special Event Trigger
-                        // IF will set, Timer 3 will reset
+  CCP5CON = 0b00001011; // Compare Mode Special Event Trigger
+                        // IF will set, Timer 5 will reset
   
-  CCPR3H = 0xC3;        // Compare auf 50000 x 5(2500000 = 1 Sek)
-  CCPR3L = 0x50;
+  CCPR5H = 0xC3;        // Compare auf 50000 x 5(2500000 = 1 Sek)
+  CCPR5L = 0x50;
  
-  CCP3IP_bit = 0;                         // low priority
-  CCP3IF_bit = 0;                         // Clear Flag
-  CCP3IE_bit = 1;                         // Interrupt aktivieren
+  CCP5IP_bit = 0;                         // low priority
+  CCP5IF_bit = 0;                         // Clear Flag
+  CCP5IE_bit = 1;                         // Interrupt aktivieren
 
  //-----------------------------------------------------
-  // TIMER 3 - Für Compare Modus
+  // TIMER 5 - Für Compare Modus
    // IPR5
-   TMR3MD_bit = 0; // Power for Timer 3 is enabled
-   TMR3IP_bit = 0; // Low priority
-   TMR3IF_bit = 0; // Clear Flag
-   TMR3IE_bit = 0; // ISR Disable
+   TMR5MD_bit = 0; // Power for Timer 5 is enabled
+   TMR5IP_bit = 0; // Low priority
+   TMR5IF_bit = 0; // Clear Flag
+   TMR5IE_bit = 0; // ISR Disable
 
-   // T3GCON
-   TMR3GE_bit = 0; // not gate controlled
-   // T3SOSCEN_bit = x -> keine Funktion in dieser Einstellung
+   // T5GCON
+   TMR5GE_bit = 0; // not gate controlled
+   // T5SOSCEN_bit = x -> keine Funktion in dieser Einstellung
   
-   // T3CON
-   TMR3CS1_bit = 0; // Fosc/4
-   TMR3CS0_bit = 0;
-   T3CKPS1_bit = 1; // 1:8
-   T3CKPS0_bit = 1;
-   T3SOSCEN_bit = 0; // Sec. osc. disabled
-   NOT_T3SYNC_bit = 0;  // Sync. Clock
-   T3RD16_bit = 0; //8bit operation
-   TMR3ON_bit = 0;   //TMR aus
+   // T5CON
+   TMR5CS1_bit = 0; // Fosc/4
+   TMR5CS0_bit = 0;
+   T5CKPS1_bit = 1; // 1:8
+   T5CKPS0_bit = 1;
+   T5SOSCEN_bit = 0; // Sec. osc. disabled
+   NOT_T5SYNC_bit = 0;  // Sync. Clock
+   T5RD16_bit = 0; //8bit operation
+   TMR5ON_bit = 0;   //TMR aus
 
-   TMR3H = 0; // TMR Register auf 0
-   TMR3L = 0;
-
+   TMR5H = 0; // TMR Register auf 0
+   TMR5L = 0;
 }

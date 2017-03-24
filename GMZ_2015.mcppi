@@ -6,7 +6,7 @@ Value=0
 [BUILD_TYPE]
 Value=0
 [ACTIVE_TAB]
-Value=GLOBAL.h
+Value=MENU.c
 [USE_EEPROM]
 Value=0
 [USE_HEAP]
@@ -34,14 +34,14 @@ File0=GMZ_2015.h
 File1=INIT.c
 File2=INIT.h
 File3=GLOBAL.h
-File4=GLOBAL.c
-File5=ADC.h
-File6=ADC.c
-File7=LCD.c
-File8=LCD.h
-File9=MENU.h
-File10=MENU.c
-File11=GMZ_2015.c
+File4=ADC.h
+File5=ADC.c
+File6=LCD.c
+File7=LCD.h
+File8=MENU.h
+File9=MENU.c
+File10=GMZ_2015.c
+File11=GLOBAL.c
 [EEPROM]
 Count=0
 [ACTIVE_COMMENTS_FILES]
@@ -52,11 +52,11 @@ Count=0
 Count=3
 Path0=C:\Users\Public\Documents\Mikroelektronika\mikroC PRO for PIC\Defs\
 Path1=C:\Users\Public\Documents\Mikroelektronika\mikroC PRO for PIC\uses\P18\
-Path2=F:\V1\
+Path2=E:\gmz\
 [HEADER_PATH]
 Count=2
 Path0=C:\Users\Public\Documents\Mikroelektronika\mikroC PRO for PIC\Uses\P18\
-Path1=F:\V1\
+Path1=E:\gmz\
 [HEADERS]
 Count=6
 File0=GMZ_2015.h
@@ -68,10 +68,11 @@ File5=MENU.h
 [PLDS]
 Count=0
 [Useses]
-Count=3
+Count=4
 File0=C_String_Special
 File1=EEPROM
 File2=Conversions
+File3=C_String
 [EXPANDED_NODES]
 Node0=Sources
 Node1=Header Files

@@ -12,7 +12,7 @@
  #define LED_EEPROM    0x02              //Adresse im EEPROM
  
  //PWM
- #define HV_MAX        20                // Maximaler Prozentwert für HV
+ #define HV_MAX        15                // Maximaler Prozentwert für HV
  #define PWM_ON        DC1B0_bit = DC1B1_bit = 1; PWM_PW = ((EEPROM_read(HV_EEPROM))*249/100);        // PWM einschalten
  #define PWM_OFF       CCPR1L = DC1B0_bit = DC1B1_bit = 0;      // PWM auf 0%
  #define PWM_PW        CCPR1L            // Pulsweite des PWM-Signals
@@ -26,7 +26,7 @@
  #define DISP_BL       !LATC0_bit        // Output Latch Display Backlight
  #define DISP_BL_ON    LATC0_bit = 0;    // Output Latch Display Backlight
  #define DISP_BL_OFF   LATC0_bit = 1;    // Output Latch Display Backlight
- #define LCD_OUT       PORTD
+ #define LCD_OUT       LATD
  #define EN            RE0_bit
  #define RS            RE1_bit
  
@@ -47,21 +47,22 @@
  #define HV_EEPROM            0x00   //Adresse im EEPROM
 
  // Zählrohr
- #define TICKS_ON             INT0IE_bit = 1;  // Interrupt für Ticks aktivieren
- #define TICKS_OFF            INT0IE_bit = 0;  // Interrupt für Ticks deaktivieren
+ #define TICKS_HV_ON          INT0IE_bit = 1;  // Interrupt für Ticks aktivieren
+ #define TICKS_HV_OFF         INT0IE_bit = 0;  // Interrupt für Ticks deaktivieren
  
 // *****************************************************************************
 // Funktionsprototypen
 // *****************************************************************************
 void _delay_10ms(unsigned char);
  
- 
-extern const code char *ADC_text[5];
-extern const code char *main_menu_text[7];
-extern const code char *set_menu_text[11];
-extern const code char *info_menu_text[13];
-extern const code char *HV_menu_text[7];
-extern const code char *run_text[5];
+extern const code char *ADC_text[];
+extern const code char *main_menu_text[];
+extern const code char *set_menu_text[];
+extern const code char *info_menu_text[];
+extern const code char *HV_menu_text[];
+extern const code char *run_text[];
+extern const code char *run_text_ext[];
+extern const code char *einheit_text[];
  
 // *****************************************************************************
 // Externe Variablen
@@ -81,22 +82,33 @@ extern unsigned long       ticks,         // counter for ticks (11 Stellen)
                            min_sum_0eff,   // sum of all minutes with valid ticks per minute <=20
                            sek_sum;
 
-extern unsigned short      tks_min_0eff[2],          // Ticks/min
-                                                // [0]-temp counter 
-                                                // [1]-disp counter
-                           d_tks_min_0eff;           // Durschnitt Ticks/min
+extern unsigned int      tks_min_0eff[2],          // Ticks/min
+                                                   // [0]-temp counter
+                                                   // [1]-disp counter
+                           d_tks_min_0eff,         // Durschnitt Ticks/min
+                           
+                           
+                           tks_per_sek,       // Ticks pro Sekunde
+                           tks_per_sek_old,   // Ticks pro Sekunde alter wert
+                           tks_per_min[2];
+
+extern float                sv;                // Sievert
+
+// Tick-Zähler
+extern unsigned short      TMR3L_buff,        // Kopie des Zählers
+                           TMR3H_buff;        // Kopie des Zählers
 
 // Zählervars
 extern unsigned short      counter,
                            taster_count,  // taster
                            bat_count;
+
 // Flags
 extern unsigned short      bat_flag,      // batterie
                            tick_flag,     // flag zur textaktualisierung bei neuen ticks
                            led_flag,
                            sound_flag,
                            sek_flag_ADC_refresh; // Sekundentakt für ADC-Wert Aktualisierung
-
 
 // Zeit
 extern unsigned short      xtel_sek,   // Teil-Sekundenzähler

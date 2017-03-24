@@ -31,7 +31,7 @@ const code char *ADC_text[5] = {    "SPANNUNG: ",
 
 
 
-const code char *main_menu_text[7] = {   "      GMZ 2015      ",
+const code char *main_menu_text[7] = {   "      GMZ 2017      ",
                                          "    GSI DARMSTADT   ",
 
                                          "  MESSUNG STARTEN   ",
@@ -92,11 +92,27 @@ const code char *HV_menu_text[7] = {     "MESSEN SIE AN HV-MP1",
                                     };
 
 
-const code char *run_text[5] =      {    "TICKS:              ",
+const code char *run_text[7] =      {    "UMG.AEQUIVALENTDOSIS",
+                                         "                    ",
+                                         
+                                         "TICKS:              ",
                                          "ZEIT:   :  :  :     ",
                                          
-                                         "     NULLEFFEKT     ",
+                                         "HINTERGRUNSTRAHLUNG ",
                                          "TICKS/MIN:      :   "
+                                    };
+
+
+const code char *run_text_ext[3] =  {
+                                         "BITTE WARTEN:    SEK",
+                                         "STRAHLUNG ZU HOCH!!!"
+                                    };
+
+
+const code char *einheit_text[5] = {     " nSv/h",   // nano
+                                         " ‰Sv/h",   // ‰ = µ in display chart
+                                         " mSv/h",   // milli
+                                         " H*(10)"
                                     };
 
 
@@ -118,15 +134,26 @@ unsigned long         ticks = 0,         // counter for ticks (11 Stellen)
                       min_sum_0eff = 0,  // sum of all minutes with valid ticks per minute <=20
                       sek_sum = 0;
 
-unsigned short        tks_min_0eff[2] = {0}, // Ticks/min
+unsigned int          tks_min_0eff[2] = {0}, // Ticks/min
                                              // [0]-temp counter
                                              // [1]-disp counter
-                      d_tks_min_0eff = 0;    // Durchschnitt Ticks/min
+                      d_tks_min_0eff = 0,    // Durchschnitt Ticks/min
+                      
+                      tks_per_sek = 0,       // Ticks pro Sekunde
+                      tks_per_sek_old = 0,   // Ticks pro Sekunde alter wert
+                      tks_per_min[2] = {0};  // Ticks pro Minute alter wert
+                      
+float                 sv = 0;                // Sievert
+
+// Tick-Z‰hler
+unsigned short        TMR3L_buff = 0,        // Kopie des Z‰hlers
+                      TMR3H_buff = 0;        // Kopie des Z‰hlers
 
 // Z‰hlervars
 unsigned short        counter = 0,
                       taster_count = 0, // taster
                       bat_count = 0;
+
 // Flags
 unsigned short        bat_flag = 0,  // batterie
                       tick_flag = 0, // flag zur textaktualisierung bei neuen ticks

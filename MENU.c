@@ -28,13 +28,14 @@ void _hauptmenu(void)
   const signed short max_pos = 6; //Anzahl der menüpunkte * 2 Zeilen
   signed short count, count_last; // indikator
 
+
   _lcd_clear();
   taster_count = 0;
   enc_count_2 = 0;                   //setze Encoder_Position auf 0
   count_last = 2;                    // vergleichsindikator für Encoder Pos.
 
-  while (1){
-
+  while (1)
+  {
     count = enc_count_2;          // übergebe counter Wert
 
     if (count >= max_pos) count = enc_count_2 = max_pos - 2;
@@ -114,54 +115,116 @@ void _hauptmenu(void)
 // *****************************************************************************
 void _start_GMZ(void)
 {
-  const signed short max_pos = 4; //Anzahl der menüpunkte * 2 Zeilen
+  const signed short max_pos = 6; //Anzahl der menüpunkte * 2 Zeilen
   signed short count, count_last; // indikator
-  
-  char tick_text[11], byte_text[4];
+  unsigned short zf = 0; // Zeilenflag für Anzeige
+
+   
+  char tick_text[11], byte_text[4], sievert_text[10];
 
   _lcd_clear();
   _lcd(CURSOR_BL_OFF,'I');    // cursor aus
   taster_count = 0;
-  enc_count_2 = 0;                   //setze Encoder_Position auf 0
+  enc_count_2 = 0;                   // setze Encoder_Position auf 0
   count_last = 2;                    // vergleichsindikator für Encoder Pos.
 
   ticks = 0;
-  TMR3ON_bit = 0;
+  TMR5ON_bit = 0;
   day = hour = min = sek = sek_sum = xtel_sek = TMR3L = TMR3H = 0;
   tks_min_0eff[0] = tks_min_0eff[1] = d_tks_min_0eff = tks_sum_0eff = min_sum_0eff = 0;  // ticks pro minute für Nulleffekt
-  TMR3ON_bit = 1;
+  tks_per_sek = 0;
+  TMR3L_buff = TMR3H_buff = 0;
+  sv = 0;
+
+  TMR5ON_bit = 1; // starte Zeit-Timer
 
   PWM_ON;
-  TICKS_ON;
+  TMR3ON_bit = 1; // starte Tick-Zaehler
+
+  delay_ms(1000);
 
   while (1)
   {
-
     count = enc_count_2;          // übergebe counter Wert
 
     if (count >= max_pos) count = enc_count_2 = max_pos - 2;
     else if (count.B7) count = enc_count_2 = 0;
 
+     // aktualisiere alle Werte und Display, wenn neue Seite gewählt wurde
     if (count != count_last)
     {
-     tick_flag = day_flag = hour_flag = min_flag = sek_flag = 1;   // zeige bei neuem Durchlauf die Werte an
+     tick_flag = day_flag = hour_flag = min_flag = sek_flag = 1;
      _lcd(CURSOR_BL_OFF,'I');
      _lcd(ROW1,'I');
      _romtolcd(run_text[count]);
      _lcd(ROW2,'I');
      _romtolcd(run_text[count+1]);
      count_last = count;
+     zf = 0;
     }
 
-    if (count == 0)
+    // Bilde 16 bit Wert = Counts per Minute
+    tks_per_sek = TMR3H_buff;
+    tks_per_sek = (tks_per_sek << 8) | TMR3L_buff;
+    
+    // Bei > 100 Ticks/sec -> Beeper Dauersignal -> Int. aus
+    if ( tks_per_sek > 100 )
     {
-      if (tick_flag)
-      {
-        _lcd(ROW1+7,'I');
-        LongWordToSTR(ticks, tick_text);   // convert to string
-        _vartolcd(tick_text);          // Ausgabe(ohne Vorzeichen)
-        tick_flag = 0;
-      }
+       TICKS_HV_OFF;
+       if (sound_flag) BEEP = 1;  // Beeper nur einschalten, wenn aktiviert
+       if (LED_flag) LED = 1;  // LED nur einschalten, wenn aktiviert
+    }
+    
+    else  TICKS_HV_ON;
+
+      // Zeige Sievers
+      // *************
+     if (count == 0)
+     {
+       if (sek_flag)
+       {
+         // Berechne Sievers
+         if(!tks_per_min[1] && tks_per_sek < 2) _show_message(1, count, &zf);
+         else
+         {
+           _show_message(0, count, &zf);
+
+           if (tks_per_sek > 1) sv = (tks_per_sek / 1.5);
+           else if (tks_per_min[1]) sv = (tks_per_min[1] / 90.00); // /60 /1.5
+           else sv = 0;
+
+           _lcd(ROW2+7,'I');  // Cursor Position
+           
+           if( sv < 1.0 )
+           {
+            _romtolcd(einheit_text[0]);
+            if (sv) sv = sv * 1000;
+           }
+
+           else if( sv < 1000.0 ) _romtolcd(einheit_text[1]);
+           
+           else
+           {
+             _romtolcd(einheit_text[2]);
+             sv = sv / 1000;
+           }
+           
+           _romtolcd(einheit_text[3]);
+
+           _lcd(ROW2,'I');  // Cursor Position
+           FloatToStr_FixLen(sv, sievert_text,7);   // convert to string
+           _vartolcd(sievert_text);          // Ausgabe
+         }
+
+        sek_flag = 0;
+       }
+     }
+    
+    
+    // Zeige Ticks ueber Zeit
+    //***********************
+    else if (count == 2)
+    {
 
       if (day_flag)
       {
@@ -191,47 +254,116 @@ void _start_GMZ(void)
 
        if (sek_flag)
       {
+       // Wenn ISR für Ticks aus
+       if (INT0IE_bit == 0)
+       { 
+         ticks = ticks + tks_per_sek;
+         tick_flag = 1;
+       }
         _lcd(ROW2+15,'I');
         ByteToStr(sek, byte_text);   // convert to string
         if(byte_text[1] == ' ') byte_text[1] = '0';
         _vartolcd(byte_text+1);          // Ausgabe(ohne Vorzeichen)
         sek_flag = 0;
       }
-     }
      
-     else if (count == 2)
+      if (tick_flag)
+      {
+        _lcd(ROW1+7,'I');
+        LongWordToSTR(ticks, tick_text);   // convert to string
+        _vartolcd(tick_text);          // Ausgabe(ohne Vorzeichen)
+        tick_flag = 0;
+      }
+     }
+
+     // Zeige Hintergrundstrahlung
+     //***************************
+     else if (count == 4)
      {
-       if (min_flag)
+       if ( tks_per_min[1] > 20 || tks_per_sek > 1 ) _show_message(2, count, &zf);
+       else if ( !tks_per_min[1] ) _show_message(1, count, &zf);
+       else  if ( tks_per_min[1] <= 20 )
        {
-        // Nulleffekt
-        _lcd(ROW2+11,'I');
-        ByteToStr(tks_min_0eff[1], byte_text);   // convert to string
-        _vartolcd(byte_text+1);          // Ausgabe(ohne Vorzeichen)
-       
-        // Nulleffekt-Durchschnitt aller bisherigen  Nulleffekt-Messungen
-        _lcd(ROW2+15,'I');
-        _lcd(AVERAGE,'D');
-        _lcd(ROW2+18,'I');
-        if (!min_sum_0eff) d_tks_min_0eff = 0; //erster durchlauf
-        else d_tks_min_0eff = tks_sum_0eff/min_sum_0eff;
-        ByteToStr(d_tks_min_0eff, byte_text);   // convert to string
-        _vartolcd(byte_text+1);          // Ausgabe(ohne Vorzeichen)
-        
-        min_flag = 0;
+         _show_message(0, count, &zf);
+         // Zeige Werte an
+         if (min_flag)
+         {
+          // Nulleffekt
+          _lcd(ROW2+11,'I');
+          ByteToStr(tks_min_0eff[1], byte_text);   // convert to string
+          _vartolcd(byte_text+1);          // Ausgabe(ohne Vorzeichen)
+
+          // Nulleffekt-Durchschnitt aller bisherigen  Nulleffekt-Messungen
+          _lcd(ROW2+15,'I');
+          _lcd(AVERAGE,'D');
+          _lcd(ROW2+18,'I');
+          if (!min_sum_0eff) d_tks_min_0eff = 0; //erster durchlauf
+          else d_tks_min_0eff = tks_sum_0eff/min_sum_0eff;
+          ByteToStr(d_tks_min_0eff, byte_text);   // convert to string
+          _vartolcd(byte_text+1);          // Ausgabe(ohne Vorzeichen)
+          min_flag = 0;
+         }
        }
      }
 
     // zurück in das Hauptmenü
     if (taster_count)
     {
+     TICKS_HV_OFF;                       // Ticks aus
+     BEEP = 0;                           // Beeper aus
+     LED = 0;                            // LED aus
      PWM_OFF                            // PWM ausschalten
-     TICKS_OFF                          // Ticks ausschalten
+     TMR3ON_bit = 0;                      // stoppe Zaehler
      taster_count = 0;                  // Taster zähler rücksetzen
      return;                            // Rücksprung
     }
   };
 }
 
+
+// *****************************************************************************
+//  Wartezeit anzeigen bei (noch) nicht auswertbaren  Messungen
+// *****************************************************************************
+
+void _show_message(unsigned short show_line, signed short count, unsigned short *zf)
+{
+  unsigned short min_rest = 0; // rest einer minute
+  char byte_text[4];
+  
+  switch (show_line)
+  {
+    case 1:  // Zeige "Bitte Warten"
+      if (*zf != 1)
+      {
+         *zf = 1;
+         _lcd(ROW2,'I');
+         _romtolcd(run_text_ext[0]);
+      }
+       min_rest = 60-sek;
+       _lcd(ROW2+13,'I');
+       ByteToStr(min_rest, byte_text);   // convert to string
+      _vartolcd(byte_text);          // Ausgabe(ohne Vorzeichen)
+      break;
+
+    case 2:  // Zeige "Spannung zu hoch"
+      if (*zf != 2)
+      {
+         *zf = 2;
+         _lcd(ROW2,'I');
+         _romtolcd(run_text_ext[1]);
+      }
+      break;
+
+
+    default:  // Zeige Werte (Grundeinstellung)
+      if (*zf != 3)
+      {
+        *zf = 3;
+        _lcd(ROW2,'I');
+        _romtolcd(run_text[count+1]);
+      }
+  }
+}
 
 
 // *****************************************************************************
@@ -369,7 +501,7 @@ void _set_HV(void)
   char percent_text[5]; // String für Prozentwert auf LCD
 
   PWM_PW = 5*249/100; // auf 5% voreinstellen
-  TICKS_ON;
+  TICKS_HV_ON;
 
   led_flag = 1;    // aktiviere LED ein
   sound_flag = 1;  // aktiviere Beeper
@@ -389,7 +521,7 @@ void _set_HV(void)
 
   PWM_ON                            // PWM einschalten
   taster_count = 0;
-  enc_count =  5;                   //setze Encoder_Position auf startwert 5%
+  enc_count =  5;                   // setze Encoder_Position auf startwert 5%
   count_last =  enc_count+1;        // vergleichsindikator für Encoder Pos.
 
   while (!taster_count)
@@ -444,7 +576,7 @@ void _set_HV(void)
 
 
   PWM_OFF                            // PWM ausschalten
-  TICKS_OFF                          // Ticks ausschalten
+  TICKS_HV_OFF                          // Ticks ausschalten
 
   _lcd(ROW2,'I');
 

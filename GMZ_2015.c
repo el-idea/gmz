@@ -38,16 +38,16 @@ void interrupt(void)
 {
   signed short enc_new, enc_diff; // vars for encoder
   
-  //*************************************
-  // Tick-Ereignis mit Beeperstart (TMR6)
-  //*************************************
-  
+  //***********************************************************************
+  // Tick-Ereignis mit Beeperstart (TMR6) - nur bei HV oder < 100 Ticks/min
+  //***********************************************************************
+
   if(INT0IF_bit && INT0IE_bit)
   {
-
     tick_flag = 1;
     ticks++;
     tks_min_0eff[0]++;
+    tks_per_min[0]++;
 
     if (sound_flag) BEEP = 1;  // Beeper nur einschalten, wenn aktiviert
     if (LED_flag) LED = 1;  // LED nur einschalten, wenn aktiviert
@@ -59,7 +59,7 @@ void interrupt(void)
 
     INT0IF_bit = 0;   // lösche isr-flag
   }
-  
+
   //Beepzeit
   if(TMR6IF_bit)
   {
@@ -75,31 +75,40 @@ void interrupt(void)
   // Zeitzähler
   //*************************************
 
-  if(CCP3IF_bit)
+  if(CCP5IF_bit)
   {
-    //Displaybelauchtung bei Batteriebetrieb
-    if ((bat_flag) && (bat_count >= 10) && (DISP_BL))
-    {
-      DISP_BL_OFF            // Backlight aus
-      bat_count = 0;
-    }
-    
     // Zeitzähler
     xtel_sek++;
+    
+    // Update Sekunden
     if (xtel_sek == 5)     // 0,2s pro isr
     {
      xtel_sek = 0;
+     
+     // Zaehler auslesen
+     TMR3L_buff = TMR3L; TMR3H_buff = TMR3H; // lese Zaehler 16bit
+     TMR3H = 0x00; TMR3L = 0x00; // lösche Zaehler 16bit
+
+     // Update Sekunden
      sek++;
      sek_sum++;
      if (DISP_BL) bat_count++; // wenn Backlight an
      sek_flag = 1;
      sek_flag_ADC_refresh = 1;
     }
+    
+    // Update Minuten
     if (sek == 60)
     {
      sek = 0;
      min++;
      min_flag = 1;
+
+     // ticks für geringe Strahlung < 1,333 µSv/h (< 120 Ticks/min)
+     if (tks_per_min[0] < 120) tks_per_min[1] = tks_per_min[0];
+     else tks_per_min[1] = 0;
+     tks_per_min[0] = 0; // naechste Minute
+
      // ticks für Nulleffekt
      if (tks_min_0eff[0] <= 20)
      {
@@ -107,23 +116,35 @@ void interrupt(void)
       tks_sum_0eff += tks_min_0eff[0]; // bilde Summe aller gültigen Ticks pro Minute
       min_sum_0eff++; //addiere alle gültigen Minuten für Ticks pro Minute
      }
-     else tks_min_0eff[1] = 0;  // Hintergrundstrahlung zulässig, dann lösche
-     tks_min_0eff[0] = 0;
+     else tks_min_0eff[1] = 0;  // Strahlung zu hoch -> keine Hintergrundstrahlung
+     tks_min_0eff[0] = 0; // naechste Minute
     }
+    
+    // Update Stunden
     if (min == 60)
     {
      min = 0;
      hour++;
      hour_flag = 1;
     }
+    
+    // Update Tage
     if (hour == 24)
     {
      hour = 0;
      day++;
      day_flag = 1;
     }
+
+
+     //Displaybelauchtung bei Batteriebetrieb
+    if ((bat_flag) && (bat_count >= 10) && (DISP_BL))
+    {
+      DISP_BL_OFF            // Backlight aus
+      bat_count = 0;
+    }
     
-    CCP3IF_bit = 0;   // lösche isr-flag
+    CCP5IF_bit = 0;   // lösche isr-flag
   }
   
   
@@ -166,7 +187,6 @@ void interrupt(void)
 
     // Encoder- Taster ENC_P
     // ----------------------
-
     if ((!ENC_P) && (!enc_p_hold)) enc_p_count = 0;        // taster wurde noch nicht
     else if ((ENC_P) && (enc_p_hold)) enc_p_count = 5;     // taster ist noch gedrückt
     else if ((!ENC_P) && (enc_p_hold))                     // taster wurde gerade losgelassen (entprell 5x2 ms)
@@ -228,7 +248,7 @@ void _function_test(void) {
 
     _lcd_clear();
     DISP_BL_ON            // Backlight an
-    TMR3ON_bit = 1;         // Zeitzähler an
+    TMR5ON_bit = 1;         // Zeitzähler an
 
     // Spannungsmessung
     GO_DONE_bit = 1;                // ADC starten

@@ -16,11 +16,8 @@
 
 /* TODO:
 - Einstellen der Beleuchtungszeit bei Batteriebetrieb
-- microsievers berechnen etc 
-(siehe Bedienungsanleitung SMB-20 Geiger-Counter)
+- Interner Quarz: feintuning über Zählerregister.
 */
-
-
 
 #include "GLOBAL.h"
 #include "GMZ_2015.h"
@@ -28,7 +25,6 @@
 #include "LCD.h"
 #include "ADC.h"
 #include "MENU.h"
-
 
 
 // *****************************************************************************

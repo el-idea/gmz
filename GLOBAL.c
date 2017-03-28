@@ -42,7 +42,7 @@ const code char *main_menu_text[6] = {   "      GMZ 2017      ",
                                     };
 
 
-const code char *set_menu_text[12] =    {"SIGNALGEBER AKTIV   ",
+const code char *set_menu_text[14] =    {"SIGNALGEBER AKTIV   ",
                                          "                    ",
                                          
                                          "LED AKTIV           ",
@@ -50,16 +50,17 @@ const code char *set_menu_text[12] =    {"SIGNALGEBER AKTIV   ",
 
                                          "    HOCHSPANNUNG    ",
                                          "     EINSTELLEN     ",
-                                         /*
+
                                          "     ZEIT-BASIS     ",
-                                         "     ABGLEICHEN     ",
-                                         */
+                                         "    FEINABGLEICH    ",
+
                                          "INFORMATIONEN UEBER ",
                                          "    DIESES GERAET   ",
                                          
                                          "                    ",
                                          "      ZURUECK       "
                                     };
+
 
 
 
@@ -92,6 +93,26 @@ const code char *HV_menu_info[8] = {     "  ACHTUNG! HINWEIS! ",
                                          "    STARTEN         ",
                                          "    ABBRECHEN       "
                                     };
+
+
+
+const code char *timebase_info[10] = {   "  FUER DEN ABGLEICH ",
+                                         "      WIRD EIN      ",
+
+                                         " FUNKTIONSGENERATOR ",
+                                         "  60 KHZ BENOETIGT  ",
+                                         
+                                         "      ZAEHLROHR     ",
+                                         "     ENTFERNEN!!    ",
+
+                                         "  TTL-SIGNAL AN X6  ",
+                                         " (KATHODE) ANLEGEN  ",
+
+                                         "    STARTEN         ",
+                                         "    ABBRECHEN       "
+                                    };
+
+
 
 
 const code char *HV_menu_text[6] = {     "MESSEN SIE AN HV-MP1",

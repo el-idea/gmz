@@ -69,6 +69,7 @@ extern const code char *main_menu_text[];
 extern const code char *set_menu_text[];
 extern const code char *info_menu_text[];
 extern const code char *HV_menu_info[];
+extern const code char *timebase_info[];
 extern const code char *HV_menu_text[];
 extern const code char *run_text[];
 extern const code char *run_text_ext[];

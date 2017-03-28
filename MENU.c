@@ -377,8 +377,8 @@ void _show_message(unsigned short show_line, signed short count, unsigned short 
 
 void _settings(void)
 {
- const signed short max_pos = 8; //Anzahl der menüpunkte * 2 Zeilen
- signed short count, count_last, flag_last; // indikator
+ const signed short max_pos = 10; //Anzahl der menüpunkte * 2 Zeilen
+ signed short count, count_last, flag_last, retval; // indikator
 
   taster_count = 0;
   _lcd_clear();
@@ -435,15 +435,15 @@ void _settings(void)
          _show_arrow(BOT_LEFT);
          break;
          
-       /*
+
        case 8: // Pfeil rechts & links
          taster_count = 0;  // taster zähler rücksetzen
          _show_arrow(BOT_RIGHT);
          _show_arrow(BOT_LEFT);
          break;
-       */
+
          
-       case 8: // Pfeil links
+       case 10: // Pfeil links
          taster_count = 0;  // taster zähler rücksetzen
          _show_arrow(BOT_LEFT);
          break;
@@ -476,32 +476,33 @@ void _settings(void)
 
 
      case 4:  // Hochspannung einstellen auswahl
-      _info_HV();
+      retval = _vorabinfo(HV_menu_info,6);       // Vorabinformation und Sicherheitshinweise
+      if( retval ) _set_HV();
       _lcd_clear();
       count = 4;
       enc_count_2 = 4;                   //setze Encoder_Position
       count_last = 2;                    // vergleichsindikator für Encoder Pos.
       break;
      
-     /*
-     case 6:  // Zeit-Basis einstellen auswahl
-      _info_time_base();
-      _lcd_clear();
-      count = 0;
-      enc_count_2 = 0;                   //setze Encoder_Position
-      count_last = 2;                    // vergleichsindikator für Encoder Pos.
-      break;
-     */
 
-     case 6:  // Informationen anzeigen
-      _info_box();
+     case 6:  // Zeit-Basis einstellen auswahl
+      retval = _vorabinfo(timebase_info,8);       // Vorabinformation und Sicherheitshinweise
       _lcd_clear();
       count = 6;
       enc_count_2 = 6;                   //setze Encoder_Position
       count_last = 2;                    // vergleichsindikator für Encoder Pos.
       break;
 
-     case 8: return;
+
+     case 8:  // Informationen anzeigen
+      _info_box();
+      _lcd_clear();
+      count = 8;
+      enc_count_2 = 8;                   //setze Encoder_Position
+      count_last = 2;                    // vergleichsindikator für Encoder Pos.
+      break;
+
+     case 10: return;
     
      default: break;
     }
@@ -512,11 +513,10 @@ void _settings(void)
  
  
 // *****************************************************************************
-// - VORABINFO - Hochspannung einstellen
+// - VORABINFORMATION - max_pos = Anzahl der Menüpunkte - 2 Zeilen
 // *****************************************************************************
-void _info_HV(void)
+signed short _vorabinfo(const char *text[], const signed short max_pos)
 {
-   const signed short max_pos = 6; //Anzahl der menüpunkte - 2 Zeilen
    signed short count, count_last; // indikator
 
   taster_count = 0;
@@ -534,10 +534,11 @@ void _info_HV(void)
     if (count != count_last)
     {
      _lcd(CURSOR_BL_OFF,'I');
+    
      _lcd(ROW1,'I');
-     _romtolcd(HV_menu_info[count]);
+     _romtolcd(text[count]);
      _lcd(ROW2,'I');
-     _romtolcd(HV_menu_info[count+1]);
+     _romtolcd(text[count+1]);
 
      // Auswahlpfeil einblenden
 
@@ -573,7 +574,7 @@ void _info_HV(void)
 
           while ( count <= 0 )
           {
-            if (taster_count) return;
+            if (taster_count) return 0;
             count = enc_count;          // übergebe counter Wert
             if (count < 0 ) count = enc_count = 0;
           };
@@ -587,20 +588,14 @@ void _info_HV(void)
 
          while ( count >= 1 )
           {
-            if (taster_count) 
-            {
-             _set_HV();
-             return;
-            }
+            if (taster_count) return 1;
             count = enc_count;          // übergebe counter Wert
             if (count > 1 ) count = enc_count = 1;
           };
        }
-     
      };
     }
  }
-   _set_HV();
 }
   
   
@@ -686,8 +681,6 @@ void _set_HV(void)
   }
 
   // Speichern/Abbruch durch PIC bestätigen
-
-
   PWM_OFF                            // PWM ausschalten
   TICKS_HV_OFF                          // Ticks ausschalten
 
@@ -833,6 +826,3 @@ void _show_checkbox(unsigned short pos, unsigned short state)
    default: break;
   }
 }
-
-
-

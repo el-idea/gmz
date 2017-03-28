@@ -121,7 +121,6 @@ void _start_GMZ(void)
   unsigned short zf = 0; // Zeilenflag für Anzeige
   unsigned short chg_counter = 0; // Flag für Wechsel (ISR <-> Counter)
 
-   
   char tick_text[11], byte_text[4], sievert_text[10];
 
   _lcd_clear();
@@ -285,13 +284,13 @@ void _start_GMZ(void)
      //***************************
      else if (count == 4)
      {
-       if ( tks_per_min[1] > 20 || tks_per_sek > 1 ) _show_message(2, count, &zf);
+       if ( tks_per_min[1] > 20 || tks_per_sek > 3 ) _show_message(2, count, &zf);
        else if ( !tks_per_min[1] ) _show_message(1, count, &zf);
-       else  if ( tks_per_min[1] <= 20 )
+       else if ( tks_per_min[1] <= 20 )
        {
          _show_message(0, count, &zf);
          // Zeige Werte an
-         if (min_flag)
+         if (min_flag || new_flag)
          {
           // Nulleffekt
           _lcd(ROW2+11,'I');
@@ -307,6 +306,7 @@ void _start_GMZ(void)
           ByteToStr(d_tks_min_0eff, byte_text);   // convert to string
           _vartolcd(byte_text+1);          // Ausgabe(ohne Vorzeichen)
           min_flag = 0;
+          new_flag = 0;
          }
        }
      }
@@ -335,6 +335,8 @@ void _show_message(unsigned short show_line, signed short count, unsigned short 
   unsigned short min_rest = 0; // rest einer minute
   char byte_text[4];
   
+  new_flag = 1;
+  
   switch (show_line)
   {
     case 1:  // Zeige "Bitte Warten"
@@ -350,7 +352,7 @@ void _show_message(unsigned short show_line, signed short count, unsigned short 
       _vartolcd(byte_text);          // Ausgabe(ohne Vorzeichen)
       break;
 
-    case 2:  // Zeige "Spannung zu hoch"
+    case 2:  // Zeige "Strahlung zu hoch"
       if (*zf != 2)
       {
          *zf = 2;
@@ -486,7 +488,8 @@ void _settings(void)
      
 
      case 6:  // Zeit-Basis einstellen auswahl
-      retval = _vorabinfo(timebase_info,8);       // Vorabinformation und Sicherheitshinweise
+      retval = _vorabinfo(timebase_info,10);       // Vorabinformation und Sicherheitshinweise
+      if( retval ) _set_osctune(void);
       _lcd_clear();
       count = 6;
       enc_count_2 = 6;                   //setze Encoder_Position
@@ -614,6 +617,7 @@ void _set_HV(void)
   led_flag = 1;    // aktiviere LED ein
   sound_flag = 1;  // aktiviere Beeper
 
+  _lcd(CURSOR_BL_OFF,'I');
   _lcd(ROW1,'I');
   _romtolcd(HV_menu_text[0]);
   _lcd(ROW2,'I');
@@ -671,12 +675,18 @@ void _set_HV(void)
     if (count >= 1)
     {
      count = enc_count = 1;
+     _lcd(ROW2+11,'I');
+     _lcd(' ','D');
      _lcd(ROW2+17,'I');
+     _lcd(ARROW_RIGHT,'D');
     }
     else if (count <= 0)
     {
      count = enc_count = 0;
-     _lcd(ROW2+12,'I');
+     _lcd(ROW2+17,'I');
+     _lcd(' ','D');
+     _lcd(ROW2+11,'I');
+     _lcd(ARROW_RIGHT,'D');
     }
   }
 
@@ -698,6 +708,131 @@ void _set_HV(void)
   sound_flag = EEPROM_read(BEEP_EEPROM);    // lese Einstelleng des Beepers
   return;
 }
+
+
+
+// *****************************************************************************
+// Osctune einstellen
+// *****************************************************************************
+void _set_osctune(void)
+{
+  signed short count, count_last, count_hold; // indikator
+  signed short fmax = 32; // Maximale Frequenz
+  signed short fmin = 0-31; // Minimale Frequenz
+
+  char spos_text[5]; // String für Schalterposition auf LCD
+  char freq_text[6]; // String für Frequenz auf LCD
+
+  led_flag = 1;    // aktiviere LED ein
+  TMR3ON_bit = 1;                      // starte Zaehler
+
+  _lcd(CURSOR_BL_OFF,'I');
+
+  _lcd(ROW1,'I');
+  _romtolcd(osctune_menu_text[0]);
+  _lcd(ROW2,'I');
+  _romtolcd(osctune_menu_text[1]);
+
+  // Neuen Wert einstellen
+  taster_count = 0;
+  enc_count = 0;                   // setze Encoder_Position auf Startwert 0
+  count_last = 0;        // vergleichsindikator für Encoder Pos.
+
+  while (!taster_count)
+  {
+    count = enc_count;              // übergebe counter Wert
+   
+    if ( count < 0 )
+    {
+      if (count < fmin) count = enc_count = fmin;
+      count = -count; // Seiten für Drehencoder tauschen
+    }
+    else
+    {
+     if (count > fmax) count = enc_count = fmax;
+     count = -count; // Seiten für Drehencoder tauschen
+     count = count & 0b00111111;
+    }
+    
+    if ( sek_flag )
+    {
+     WordToStr(tks_per_sek, freq_text);
+     _lcd(ROW2+10,'I');
+     _vartolcd(freq_text);          // Ausgabe(ohne Vorzeichen)
+     sek_flag = 0;
+    }
+    
+    
+    if (count != count_last)
+    {
+      
+      // Anzeige der Schalterposition
+      /*
+      ShortToStr(count, spos_text);
+      _lcd(ROW1+16,'I');
+      _vartolcd(spos_text);          // Ausgabe
+      */
+
+
+      OSCTUNE = count;
+      count_last = count;
+    }
+  }
+
+  TMR3ON_bit = 0;                      // stoppe Zaehler
+  led_flag = 0;    // deaktiviere LED
+  
+  // Wert durch User bestätigen
+  _lcd(ROW1,'I');
+  _romtolcd(osctune_menu_text[2]);
+  _lcd(ROW2,'I');
+  _romtolcd(osctune_menu_text[3]);
+
+  count_hold = count;                 // behalte den eingstellten Prozentwert
+  taster_count = 0;
+  enc_count =  0;                      //setze Encoder_Position auf startwert
+
+  while (!taster_count)
+  {
+    count = enc_count;          // übergebe counter Wert
+
+    if (count >= 1)
+    {
+     count = enc_count = 1;
+     _lcd(ROW2+3,'I');
+     _lcd(' ','D');
+     _lcd(ROW2+12,'I');
+     _lcd(ARROW_RIGHT,'D');
+     
+    }
+    else if (count <= 0)
+    {
+     count = enc_count = 0;
+     _lcd(ROW2+12,'I');
+     _lcd(' ','D');
+     _lcd(ROW2+3,'I');
+     _lcd(ARROW_RIGHT,'D');
+    }
+  }
+
+  // Speichern/Abbruch durch PIC bestätigen
+
+  _lcd(ROW2,'I');
+
+  if (count <= 0) _romtolcd(osctune_menu_text[5]);     // Abbruch
+  else                                            // Speichern
+  {
+    _romtolcd(osctune_menu_text[4]);
+    EEPROM_write(OSC_EEPROM, count_hold);         // speichere HV-Wert in EEPROM
+  }
+  _delay_10ms(200);                          //2 Sekunden warten
+
+  OSCTUNE = EEPROM_read(OSC_EEPROM);    // lese Einstellung
+  return;
+}
+
+
+
 
 
 // *****************************************************************************
@@ -785,7 +920,7 @@ void _show_arrow(unsigned short pos)
 
 
 // *****************************************************************************
-// CheckBoxe anzeigen
+// CheckBox anzeigen
 // *****************************************************************************
 void _show_checkbox(unsigned short pos, unsigned short state)
 {

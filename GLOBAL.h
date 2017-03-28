@@ -8,9 +8,7 @@
  #define LED           RB4_bit            // LED
  #define BEEP          RC1_bit           // Signalgeber
  #define TICK          RB0_bit           // Ticks vom Zählrohr
- #define BEEP_EEPROM   0x01              //Adresse im EEPROM
- #define LED_EEPROM    0x02              //Adresse im EEPROM
- 
+
  //PWM
  #define HV_MAX        15                // Maximaler Prozentwert für HV
  #define PWM_ON        DC1B0_bit = DC1B1_bit = 1; PWM_PW = ((EEPROM_read(HV_EEPROM))*249/100);        // PWM einschalten
@@ -52,9 +50,14 @@
  #define ON                    1
  #define OFF                   0
  
+ 
  //EEPROM
- #define HV_EEPROM            0x00   //Adresse im EEPROM
-
+ #define HV_EEPROM             0x00   //Adresse im EEPROM
+ #define BEEP_EEPROM           0x01   //Adresse im EEPROM
+ #define LED_EEPROM            0x02   //Adresse im EEPROM
+ #define OSC_EEPROM            0x03   //Adresse fuer Osctune im EEPROM
+ 
+ 
  // Zählrohr
  #define TICKS_HV_ON          INT0IE_bit = 1;  // Interrupt für Ticks aktivieren
  #define TICKS_HV_OFF         INT0IE_bit = 0;  // Interrupt für Ticks deaktivieren
@@ -71,6 +74,7 @@ extern const code char *info_menu_text[];
 extern const code char *HV_menu_info[];
 extern const code char *timebase_info[];
 extern const code char *HV_menu_text[];
+extern const code char *osctune_menu_text[];
 extern const code char *run_text[];
 extern const code char *run_text_ext[];
 extern const code char *einheit_text[];
@@ -93,12 +97,11 @@ extern unsigned long       ticks,         // counter for ticks (11 Stellen)
                            min_sum_0eff,   // sum of all minutes with valid ticks per minute <=20
                            sek_sum;
 
-extern unsigned int      tks_min_0eff[2],          // Ticks/min
+extern unsigned int        tks_min_0eff[2],          // Ticks/min
                                                    // [0]-temp counter
                                                    // [1]-disp counter
                            d_tks_min_0eff,         // Durschnitt Ticks/min
-                           
-                           
+
                            tks_per_sek,       // Ticks pro Sekunde
                            tks_per_sek_old,   // Ticks pro Sekunde alter wert
                            tks_per_min[2];
@@ -119,7 +122,12 @@ extern unsigned short      bat_flag,      // batterie
                            tick_flag,     // flag zur textaktualisierung bei neuen ticks
                            led_flag,
                            sound_flag,
-                           sek_flag_ADC_refresh; // Sekundentakt für ADC-Wert Aktualisierung
+                           sek_flag_ADC_refresh, // Sekundentakt für ADC-Wert Aktualisierung
+                           tmts,          // Flag für ticks/min auf ticks/sek
+                           new_flag; // flag um Anzeige nach Änderung zu erneuern
+
+// Oscillator-Tune
+extern unsigned short      osc_tune;             // Einstellung für OSCTUNE-Register (PLL off)
 
 // Zeit
 extern unsigned short      xtel_sek,   // Teil-Sekundenzähler

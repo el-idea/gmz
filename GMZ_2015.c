@@ -16,7 +16,7 @@
 
 /* TODO:
 - Einstellen der Beleuchtungszeit bei Batteriebetrieb
-- Interner Quarz: feintuning über Zählerregister.
+- EEPROM fail anzeigen
 */
 
 #include "GLOBAL.h"
@@ -96,10 +96,14 @@ void interrupt(void)
      tks_per_sek = TMR3H_buff;
      tks_per_sek = (tks_per_sek << 8) | TMR3L_buff;
      
-     if ( tks_per_sek > 1 )
+     if ( tks_per_sek > 1 ) tmts++;
+     else tmts = 0;
+     
+     if (tmts == 5)
      {
       tks_per_min[1] = 0;
       tks_min_0eff[1] = 0;
+      tmts = 0;
      }
     }
     
@@ -218,8 +222,6 @@ void interrupt(void)
 
     TMR4IF_bit = 0;   // lösche flag
   }
-  
-  
 
  }
  
@@ -242,8 +244,6 @@ void main()
     _hauptmenu();                                       // start programm
 
   while (1){};
-
-
 }
 
 // *****************************************************************************

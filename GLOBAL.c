@@ -96,7 +96,7 @@ const code char *HV_menu_info[8] = {     "  ACHTUNG! HINWEIS! ",
 
 
 
-const code char *timebase_info[10] = {   "  FUER DEN ABGLEICH ",
+const code char *timebase_info[12] = {   "  FUER DEN ABGLEICH ",
                                          "      WIRD EIN      ",
 
                                          " FUNKTIONSGENERATOR ",
@@ -107,6 +107,9 @@ const code char *timebase_info[10] = {   "  FUER DEN ABGLEICH ",
 
                                          "  TTL-SIGNAL AN X6  ",
                                          " (KATHODE) ANLEGEN  ",
+                                         
+                                         "MIT DREHKNOPF AUF CA",
+                                         " 60 KHZ ABGLEICHEN  ",
 
                                          "    STARTEN         ",
                                          "    ABBRECHEN       "
@@ -119,11 +122,25 @@ const code char *HV_menu_text[6] = {     "MESSEN SIE AN HV-MP1",
                                          "ALT:   %    NEU:   %",
                                          
                                          "ACHTUNG! HV:   %    ",
-                                         "SPEICHERN?  NEIN/JA ",
+                                         "SPEICHERN?  NEIN  JA",
                                          
                                          "   GESPEICHERT!!    ",
                                          "NICHT GESPEICHERT!! "
                                     };
+                                    
+                                    
+
+const code char *osctune_menu_text[6] = {"MESSUNG LAEUFT      ",
+                                         "FREQUENZ:        HZ ",
+
+                                         "ABGLEICH SPEICHERN? ",
+                                         "    NEIN  /  JA     ",
+
+                                         "   GESPEICHERT!!    ",
+                                         "NICHT GESPEICHERT!! "
+                                    };
+
+
 
 
 const code char *run_text[6] =      {    "UMG.AEQUIVALENTDOSIS",
@@ -132,7 +149,7 @@ const code char *run_text[6] =      {    "UMG.AEQUIVALENTDOSIS",
                                          "TICKS:              ",
                                          "ZEIT:   :  :  :     ",
                                          
-                                         "HINTERGRUNSTRAHLUNG ",
+                                         "HINTERGRUNDSTRAHLUNG",
                                          "TICKS/MIN:      :   "
                                     };
 
@@ -193,7 +210,12 @@ unsigned short        bat_flag = 0,  // batterie
                       tick_flag = 0, // flag zur textaktualisierung bei neuen ticks
                       led_flag = 0,
                       sound_flag = 0,
-                      sek_flag_ADC_refresh = 0; //Sekundentakt für ADC-Wert Aktualisierung
+                      sek_flag_ADC_refresh = 0, //Sekundentakt für ADC-Wert Aktualisierung
+                      tmts = 0, // Flag für ticks/min auf ticks/sek
+                      new_flag = 0; // flag um Anzeige nach Änderung zu erneuern
+                      
+// Oscillator-Tune
+unsigned short        osc_tune = 0;  // Einstellung für OSCTUNE-Register (PLL off)
 
 
 // Zeit
@@ -202,6 +224,8 @@ unsigned short        xtel_sek = 0,   // Teil-Sekundenzähler
                       min = 0,        // Minutenzähler (0-59)
                       hour = 0,       // Stundenzähler (0-59)
                       day = 0;        // Tageszähler (0-255)
+
+
 
 unsigned short        sek_flag = 0,
                       min_flag = 0,

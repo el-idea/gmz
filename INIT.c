@@ -182,23 +182,40 @@ while (HFIOFS_bit == 0) {};                 // Wait for stable clock
  CMP1MD_bit = 1;   // Module is disabled, Clock Source is disconnected...
  ADCMD_bit = 0;    // Module is enabled, Clock Source is connected...
 
+ 
+// OSCTUNE einstellen
+   osc_tune = EEPROM_READ(OSC_EEPROM);     // Lese OSCTUNE
+   
+   // Check OSCTUNE
+   if (osc_tune > 0b00111111)
+   {
+    osc_tune = 0x00;
+    EEPROM_WRITE(OSC_EEPROM, osc_tune);
+   }
+   OSCTUNE = osc_tune;
 
 
- sound_flag = EEPROM_READ(BEEP_EEPROM);  // Lese Beeper Flag
- LED_flag = EEPROM_READ(LED_EEPROM);     // Lese LED_flag
- 
- // falls EEPROM nicht oder fehlerhaft beschrieben
- if (sound_flag > 1)
- {
-  sound_flag = 1;
-  EEPROM_WRITE(BEEP_EEPROM, sound_flag);
- }
- 
+// LED Setting
+  LED_flag = EEPROM_READ(LED_EEPROM);     // Lese LED_flag
+  
+  // Check LED-Flag
   if (LED_flag > 1)
  {
   LED_flag = 1;
   EEPROM_WRITE(LED_EEPROM, LED_flag);
  }
+
+
+// BEEPER Setting
+ sound_flag = EEPROM_READ(BEEP_EEPROM);  // Lese Beeper Flag
+  
+  // Check sound-flag
+  if (sound_flag > 1)
+ {
+  sound_flag = 1;
+  EEPROM_WRITE(BEEP_EEPROM, sound_flag);
+ }
+
 }
 
 
@@ -234,7 +251,6 @@ void _lcd_init(void)
 
 void _pwm_init(void)
 {
-  
   // lese gespeicherten HV-Wert und setze ih auf 0, falls der PIC neu ist
   if (EEPROM_read(HV_EEPROM) > HV_MAX)
   {
